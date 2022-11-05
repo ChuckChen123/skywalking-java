@@ -26,6 +26,7 @@ import org.apache.skywalking.apm.agent.core.remote.GRPCChannelStatus;
 /**
  * For compatible with {@link ContextManagerExtendService}, don't need to manage connection status by self.
  */
+// OverrideImplementor 表示一个服务的覆盖实现
 @OverrideImplementor(ContextManagerExtendService.class)
 public class KafkaContextManagerExtendService extends ContextManagerExtendService implements KafkaConnectionStatusListener {
 

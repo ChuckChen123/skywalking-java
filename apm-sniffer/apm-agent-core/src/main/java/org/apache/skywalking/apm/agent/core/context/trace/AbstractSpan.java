@@ -31,11 +31,17 @@ import org.apache.skywalking.apm.network.trace.component.ComponentsDefine;
 public interface AbstractSpan extends AsyncSpan {
     /**
      * Set the component id, which defines in {@link ComponentsDefine}
+     * 指定当前 Span 表示的操作发生在哪个插件上
      *
      * @return the span for chaining.
      */
     AbstractSpan setComponent(Component component);
 
+    /**
+     * 指定当前 Span 表示的操作所在的插件属于哪一种 skywalking 划分的类型
+     * @param layer
+     * @return
+     */
     AbstractSpan setLayer(SpanLayer layer);
 
     /**
@@ -54,6 +60,7 @@ public interface AbstractSpan extends AsyncSpan {
 
     /**
      * Record an exception event of the current walltime timestamp.
+     * walltime 挂钟时间，本地时间
      *
      * @param t any subclass of {@link Throwable}, which occurs in this span.
      * @return the Span, for chaining
@@ -83,6 +90,10 @@ public interface AbstractSpan extends AsyncSpan {
 
     /**
      * Sets the string name for the logical operation this span represents.
+     * 如果当前 Span 的操作是
+     *      一个 HTTP 请求，那么 operationName 就是请求的 URL
+     *      一条 SQL语句，那么 operationName 就是 SQL 的类型
+     *      一个 Redis 操作，那么 operationName 就是 Redis 命令
      *
      * @return this Span instance, for chaining
      */
@@ -113,6 +124,13 @@ public interface AbstractSpan extends AsyncSpan {
 
     AbstractSpan start(long startTime);
 
+    /**
+     * 什么叫 peer，就是对端地址
+     * 一个请求可能跨多个进程，操作多种中间件，那么每一次 RPC，对面的服务的地址就是 remotePeer
+     *                                              每一次中间件的操作，中间件的地址就是 remotePeer
+     * @param remotePeer
+     * @return
+     */
     AbstractSpan setPeer(String remotePeer);
 
     /**

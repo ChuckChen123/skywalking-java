@@ -19,5 +19,12 @@
 package org.apache.skywalking.apm.commons.datacarrier.buffer;
 
 public enum BufferStrategy {
-    BLOCKING, IF_POSSIBLE
+    /**
+     * 阻塞，等待队列有空位置
+     */
+    BLOCKING,
+    /**
+     * 能放就放，不能放就算了
+     */
+    IF_POSSIBLE
 }

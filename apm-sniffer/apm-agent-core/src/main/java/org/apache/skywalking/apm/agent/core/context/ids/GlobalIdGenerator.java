@@ -22,6 +22,10 @@ import java.util.UUID;
 
 import org.apache.skywalking.apm.util.StringUtil;
 
+/**
+ * 生成唯一 ID
+ * TranceId SegmentId
+ */
 public final class GlobalIdGenerator {
     private static final String PROCESS_ID = UUID.randomUUID().toString().replaceAll("-", "");
     private static final ThreadLocal<IDContext> THREAD_ID_SEQUENCE = ThreadLocal.withInitial(
@@ -56,6 +60,7 @@ public final class GlobalIdGenerator {
         private short threadSeq;
 
         // Just for considering time-shift-back only.
+        // 时钟回拨
         private long lastShiftTimestamp;
         private int lastShiftValue;
 
@@ -71,7 +76,7 @@ public final class GlobalIdGenerator {
         private long timestamp() {
             long currentTimeMillis = System.currentTimeMillis();
 
-            if (currentTimeMillis < lastTimestamp) {
+            if (currentTimeMillis < lastTimestamp) { // 发生了时钟回拨
                 // Just for considering time-shift-back by Ops or OS. @hanahmily 's suggestion.
                 if (lastShiftTimestamp != currentTimeMillis) {
                     lastShiftValue++;

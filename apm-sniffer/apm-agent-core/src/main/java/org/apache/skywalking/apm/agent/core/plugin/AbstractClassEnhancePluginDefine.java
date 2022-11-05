@@ -35,11 +35,15 @@ import org.apache.skywalking.apm.util.StringUtil;
 import java.util.List;
 
 /**
+ * XxxInstrumentation 是用于定义插件的拦截点。
+ * 拦截点：指定类的指定方法（实例方法、构造方法、静态方法）
+ *
  * Basic abstract class of all sky-walking auto-instrumentation plugins.
  * <p>
  * It provides the outline of enhancing the target class. If you want to know more about enhancing, you should go to see
  * {@link ClassEnhancePluginDefine}
  */
+// 所有插件的父类
 public abstract class AbstractClassEnhancePluginDefine {
     private static final ILog LOGGER = LogManager.getLogger(AbstractClassEnhancePluginDefine.class);
 
@@ -60,6 +64,7 @@ public abstract class AbstractClassEnhancePluginDefine {
     public DynamicType.Builder<?> define(TypeDescription typeDescription, DynamicType.Builder<?> builder,
         ClassLoader classLoader, EnhanceContext context) throws PluginException {
         String interceptorDefineClassName = this.getClass().getName();
+        // 拿到被拦截到这个类的全类名
         String transformClassName = typeDescription.getTypeName();
         if (StringUtil.isEmpty(transformClassName)) {
             LOGGER.warn("classname of being intercepted is not defined by {}.", interceptorDefineClassName);
@@ -141,6 +146,7 @@ public abstract class AbstractClassEnhancePluginDefine {
 
     /**
      * Define the {@link ClassMatch} for filtering class.
+     * 指定插件要拦截的类
      *
      * @return {@link ClassMatch}
      */
@@ -158,6 +164,12 @@ public abstract class AbstractClassEnhancePluginDefine {
         return new String[] {};
     }
 
+    /**
+     * WitnessClass机制
+     *
+     * 通过每个版本独特的类来区分框架的不同版本
+     * @return
+     */
     protected List<WitnessMethod> witnessMethods() {
         return null;
     }
@@ -168,6 +180,7 @@ public abstract class AbstractClassEnhancePluginDefine {
 
     /**
      * Constructor methods intercept point. See {@link ConstructorInterceptPoint}
+     * 指定插件要拦截的构造方法
      *
      * @return collections of {@link ConstructorInterceptPoint}
      */
@@ -175,6 +188,7 @@ public abstract class AbstractClassEnhancePluginDefine {
 
     /**
      * Instance methods intercept point. See {@link InstanceMethodsInterceptPoint}
+     * 指定插件要拦截的实例方法
      *
      * @return collections of {@link InstanceMethodsInterceptPoint}
      */

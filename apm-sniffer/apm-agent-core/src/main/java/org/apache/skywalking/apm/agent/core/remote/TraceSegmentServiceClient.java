@@ -48,8 +48,11 @@ import static org.apache.skywalking.apm.agent.core.remote.GRPCChannelStatus.CONN
 public class TraceSegmentServiceClient implements BootService, IConsumer<TraceSegment>, TracingContextListener, GRPCChannelListener {
     private static final ILog LOGGER = LogManager.getLogger(TraceSegmentServiceClient.class);
 
+    // 上一次打印传输 TraceSegment 情况的日志的时间
     private long lastLogTime;
+    // 成功发送 TraceSegment 数量
     private long segmentUplinkedCounter;
+    // 因网络原因丢弃的 TraceSegment 数量
     private long segmentAbandonedCounter;
     private volatile DataCarrier<TraceSegment> carrier;
     private volatile TraceSegmentReportServiceGrpc.TraceSegmentReportServiceStub serviceStub;

@@ -108,10 +108,12 @@ public class ContextManager implements BootService {
         if (carrier != null && carrier.isValid()) {
             SamplingService samplingService = ServiceManager.INSTANCE.findService(SamplingService.class);
             samplingService.forceSampled();
+            // 一定要强制采样，因为链路中的前置 segment 已经存在，否则链路就可能会断开
             context = getOrCreate(operationName, true);
             span = context.createEntrySpan(operationName);
             context.extract(carrier);
         } else {
+            // 不需要强制采样，根据采样率来决定当前链路是否要采样
             context = getOrCreate(operationName, false);
             span = context.createEntrySpan(operationName);
         }

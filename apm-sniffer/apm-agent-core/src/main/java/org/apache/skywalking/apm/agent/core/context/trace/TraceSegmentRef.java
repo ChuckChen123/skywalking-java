@@ -34,7 +34,7 @@ import org.apache.skywalking.apm.network.language.agent.v3.SegmentReference;
 public class TraceSegmentRef {
     private SegmentRefType type;
     private String traceId;
-    private String traceSegmentId;
+    private String traceSegmentId; // parent
     private int spanId;
     private String parentService;
     private String parentServiceInstance;
@@ -67,6 +67,10 @@ public class TraceSegmentRef {
         this.parentEndpoint = snapshot.getParentEndpoint();
     }
 
+    /**
+     * 就是把 Java 对象序列化为 Protobuf 对象
+     * @return
+     */
     public SegmentReference transform() {
         SegmentReference.Builder refBuilder = SegmentReference.newBuilder();
         if (SegmentRefType.CROSS_PROCESS.equals(type)) {

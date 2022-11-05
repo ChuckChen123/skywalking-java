@@ -31,12 +31,16 @@ public class AtomicRangeInteger extends Number implements Serializable {
     private int endValue;
 
     public AtomicRangeInteger(int startValue, int maxValue) {
+        // 简单理解为，创建了一个长度为 31 的数组
         this.values = new AtomicIntegerArray(31);
+        // 将 values 这个数组的下标为 15（即第 16 个元素）的位置的值设置为指定值（默认为 0）
         this.values.set(VALUE_OFFSET, startValue);
         this.startValue = startValue;
         this.endValue = maxValue - 1;
     }
 
+    // 如果取到的 next 大于了 endValue，就意味着下标越界了
+    // 这时候需要通过 CAS 操作将 values 的第16个元素的值重置为 startValue，即0
     public final int getAndIncrement() {
         int next;
         do {

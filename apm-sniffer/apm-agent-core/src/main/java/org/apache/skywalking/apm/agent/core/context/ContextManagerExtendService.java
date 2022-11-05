@@ -32,7 +32,7 @@ import org.apache.skywalking.apm.agent.core.remote.GRPCChannelStatus;
 import org.apache.skywalking.apm.agent.core.sampling.SamplingService;
 import org.apache.skywalking.apm.util.StringUtil;
 
-@DefaultImplementor
+@DefaultImplementor // 表示一个服务的默认实现
 public class ContextManagerExtendService implements BootService, GRPCChannelListener {
 
     private volatile String[] ignoreSuffixArray = new String[0];

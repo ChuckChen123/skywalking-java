@@ -55,15 +55,18 @@ public abstract class AbstractTracingSpan implements AbstractSpan {
     protected SpanLayer layer;
     /**
      * The span has been tagged in async mode, required async stop to finish.
+     * 表示当前异步操作是否已经开始
      */
     protected volatile boolean isInAsyncMode = false;
     /**
      * The flag represents whether the span has been async stopped
+     * 表示当前异步操作是否已经结束
      */
     private volatile boolean isAsyncStopped = false;
 
     /**
      * The context to which the span belongs
+     * 管理一条链路上的trace和span的
      */
     protected final TracingContext owner;
 
@@ -91,6 +94,7 @@ public abstract class AbstractTracingSpan implements AbstractSpan {
      * The refs of parent trace segments, except the primary one. For most RPC call, {@link #refs} contains only one
      * element, but if this segment is a start span of batch process, the segment faces multi parents, at this moment,
      * we use this {@link #refs} to link them.
+     * 用于当前 Span 指定自己所在的 Segment 的前一个 Segment。
      */
     protected List<TraceSegmentRef> refs;
 
@@ -318,6 +322,7 @@ public abstract class AbstractTracingSpan implements AbstractSpan {
         if (isInAsyncMode) {
             throw new RuntimeException("Prepare for async repeatedly. Span is already in async mode.");
         }
+        // 等待异步任务完成
         ContextManager.awaitFinishAsync(this);
         isInAsyncMode = true;
         return this;

@@ -46,6 +46,7 @@ public class Channels<T> {
     }
 
     public boolean save(T data) {
+        // Buffer 的索引，即选择哪个 Buffer 来存数据
         int index = dataPartitioner.partition(bufferChannels.length, data);
         int retryCountDown = 1;
         if (BufferStrategy.IF_POSSIBLE.equals(strategy)) {

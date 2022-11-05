@@ -57,6 +57,11 @@ import static org.apache.skywalking.apm.agent.core.conf.Config.Agent.CLUSTER;
  * In skywalking core concept, FOLLOW_OF is an abstract concept when cross-process MQ or cross-thread async/batch tasks
  * happen, we used {@link TraceSegmentRef} for these scenarios. Check {@link TraceSegmentRef} which is from {@link
  * ContextCarrier} or {@link ContextSnapshot}.
+ *
+ * TracingContext 管理：
+ *      当前 Segment 和自己前后的 Segment 的引用 TraceSegmentRef
+ *      当前 Segment 内的所有 span
+ *
  */
 public class TracingContext implements AbstractTracerContext {
     private static final ILog LOGGER = LogManager.getLogger(TracingContext.class);
@@ -86,6 +91,8 @@ public class TracingContext implements AbstractTracerContext {
 
     /**
      * A counter for the next span.
+     *
+     * span id 生成器
      */
     private int spanIdGenerator;
 
@@ -99,8 +106,10 @@ public class TracingContext implements AbstractTracerContext {
     private volatile boolean isRunningInAsyncMode;
     private volatile ReentrantLock asyncFinishLock;
 
+    // 表示的是 当前 TracingContext 是否在运行
     private volatile boolean running;
 
+    // 当前 TracingContext 的创建时间
     private final long createTime;
 
     /**

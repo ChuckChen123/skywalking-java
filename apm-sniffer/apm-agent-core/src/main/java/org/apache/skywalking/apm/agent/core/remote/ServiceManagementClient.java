@@ -44,6 +44,12 @@ import org.apache.skywalking.apm.util.RunnableWithExceptionProtection;
 
 import static org.apache.skywalking.apm.agent.core.conf.Config.Collector.GRPC_UPSTREAM_TIMEOUT;
 
+/**
+ * 自报家门/打招呼
+ *
+ * 1. 将当前 Agent Client 的基本信息汇报给 OAP
+ * 2. 和 OAP 保持心跳
+ */
 @DefaultImplementor
 public class ServiceManagementClient implements BootService, Runnable, GRPCChannelListener {
     private static final ILog LOGGER = LogManager.getLogger(ServiceManagementClient.class);
@@ -51,12 +57,13 @@ public class ServiceManagementClient implements BootService, Runnable, GRPCChann
 
     private volatile GRPCChannelStatus status = GRPCChannelStatus.DISCONNECT;
     private volatile ManagementServiceGrpc.ManagementServiceBlockingStub managementServiceBlockingStub;
-    private volatile ScheduledFuture<?> heartbeatFuture;
-    private volatile AtomicInteger sendPropertiesCounter = new AtomicInteger(0);
+    private volatile ScheduledFuture<?> heartbeatFuture; // 心跳定时任务
+    private volatile AtomicInteger sendPropertiesCounter = new AtomicInteger(0); // Agent Client 信息发送计数器
 
     @Override
     public void statusChanged(GRPCChannelStatus status) {
         if (GRPCChannelStatus.CONNECTED.equals(status)) {
+            // 找到 GRPCChannelManager 服务，拿到网络连接
             Channel channel = ServiceManager.INSTANCE.findService(GRPCChannelManager.class).getChannel();
             managementServiceBlockingStub = ManagementServiceGrpc.newBlockingStub(channel);
         } else {
@@ -69,6 +76,7 @@ public class ServiceManagementClient implements BootService, Runnable, GRPCChann
     public void prepare() {
         ServiceManager.INSTANCE.findService(GRPCChannelManager.class).addChannelListener(this);
 
+        // 将配置文件中的 Agent Client 信息放入集合、等待发送
         SERVICE_INSTANCE_PROPERTIES = InstanceJsonPropertiesUtil.parseProperties();
     }
 
@@ -101,6 +109,8 @@ public class ServiceManagementClient implements BootService, Runnable, GRPCChann
         if (GRPCChannelStatus.CONNECTED.equals(status)) {
             try {
                 if (managementServiceBlockingStub != null) {
+                    // 心跳周期 = 30s， 信息汇报频率因子 = 10 => 每 100 秒向 OAP 汇报一次 Agent Client Properties
+                    // ROUND 1. counter = 0 0%10 = 0
                     if (Math.abs(
                         sendPropertiesCounter.getAndAdd(1)) % Config.Collector.PROPERTIES_REPORT_PERIOD_FACTOR == 0) {
 
@@ -116,6 +126,7 @@ public class ServiceManagementClient implements BootService, Runnable, GRPCChann
                                                                             LoadedLibraryCollector.buildJVMInfo())
                                                                         .build());
                     } else {
+                        // 调用 keeplive
                         final Commands commands = managementServiceBlockingStub.withDeadlineAfter(
                             GRPC_UPSTREAM_TIMEOUT, TimeUnit.SECONDS
                         ).keepAlive(InstancePingPkg.newBuilder()

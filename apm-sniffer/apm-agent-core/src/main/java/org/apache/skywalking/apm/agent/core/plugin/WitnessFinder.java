@@ -30,6 +30,7 @@ import java.util.Map;
 public enum WitnessFinder {
     INSTANCE;
 
+    // TypePool，类型池，每个ClassLoader都有一个池
     private final Map<ClassLoader, TypePool> poolMap = new HashMap<ClassLoader, TypePool>();
 
     /**

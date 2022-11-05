@@ -29,6 +29,8 @@ import org.apache.skywalking.apm.agent.core.conf.RuntimeContextConfiguration;
  * the same context only.
  * <p>
  * In most cases, it means it only stays in a single thread for context propagation.
+ *
+ * TraceContext 有时候需要记录一些额外的信息，那么就记录在 RuntimeContext 中
  */
 public class RuntimeContext {
     private final ThreadLocal<RuntimeContext> contextThreadLocal;

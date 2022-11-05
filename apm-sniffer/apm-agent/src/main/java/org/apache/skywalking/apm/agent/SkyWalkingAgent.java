@@ -62,10 +62,15 @@ public class SkyWalkingAgent {
 
     /**
      * Main entrance. Use byte-buddy transform to enhance all classes, which define in plugins.
+     *
+     * Skywalking 入口
+     *
      */
     public static void premain(String agentArgs, Instrumentation instrumentation) throws PluginException {
         final PluginFinder pluginFinder;
         try {
+            // 1 加载配置信息
+            // -javaagent:/path/to/agent.jar=k1=v1,k2=v2....
             SnifferConfigInitializer.initializeCoreConfig(agentArgs);
         } catch (Exception e) {
             // try to resolve a new logger, and use the new logger to write the error log here
@@ -78,6 +83,7 @@ public class SkyWalkingAgent {
         }
 
         try {
+            // 2 加载插件
             pluginFinder = new PluginFinder(new PluginBootstrap().loadPlugins());
         } catch (AgentPackageNotFoundException ape) {
             LOGGER.error(ape, "Locate agent.jar failure. Shutting down.");
@@ -87,8 +93,11 @@ public class SkyWalkingAgent {
             return;
         }
 
+        // 3 byteBuddy字节码增强
+        // 是否开启class debug
         final ByteBuddy byteBuddy = new ByteBuddy().with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS));
 
+        // ignore 忽略那些类
         AgentBuilder agentBuilder = new AgentBuilder.Default(byteBuddy).ignore(
                 nameStartsWith("net.bytebuddy.")
                         .or(nameStartsWith("org.slf4j."))
@@ -124,6 +133,9 @@ public class SkyWalkingAgent {
             }
         }
 
+        // type 我们要通过插件增强的类
+        // transform 定义字节码更改逻辑
+        // lintener 打印一些日志
         agentBuilder.type(pluginFinder.buildMatch())
                     .transform(new Transformer(pluginFinder))
                     .with(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION)
@@ -134,6 +146,9 @@ public class SkyWalkingAgent {
         PluginFinder.pluginInitCompleted();
 
         try {
+            // 插件架构
+            // agent-core 看作是内核 所谓的服务就是各种插件，由 core 内核进行管理
+            // 启动服务
             ServiceManager.INSTANCE.boot();
         } catch (Exception e) {
             LOGGER.error(e, "Skywalking agent boot failure.");
@@ -157,6 +172,7 @@ public class SkyWalkingAgent {
                                                 final JavaModule javaModule,
                                                 final ProtectionDomain protectionDomain) {
             LoadedLibraryCollector.registerURLClassLoader(classLoader);
+            // 拿到所有可以应用于当前被拦截的这个类的插件
             List<AbstractClassEnhancePluginDefine> pluginDefines = pluginFinder.find(typeDescription);
             if (pluginDefines.size() > 0) {
                 DynamicType.Builder<?> newBuilder = builder;
@@ -165,6 +181,7 @@ public class SkyWalkingAgent {
                     DynamicType.Builder<?> possibleNewBuilder = define.define(
                             typeDescription, newBuilder, classLoader, context);
                     if (possibleNewBuilder != null) {
+                        // 后一个插件是基于前一个插件已经修改了的字节码再次进行修改
                         newBuilder = possibleNewBuilder;
                     }
                 }

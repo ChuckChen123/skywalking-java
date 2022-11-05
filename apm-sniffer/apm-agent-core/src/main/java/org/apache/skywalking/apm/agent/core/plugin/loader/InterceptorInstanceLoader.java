@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The <code>InterceptorInstanceLoader</code> is a classes finder and container.
  * <p>
  * This is a very important class in sky-walking's auto-instrumentation mechanism. If you want to fully understand why
- * need this, and how it works, you need have knowledge about Classloader appointment mechanism.
+ * need this, and how it works, you need have knowledge about Classloader appointment mechanism. // 双亲委派机制
  * <p>
  */
 public class InterceptorInstanceLoader {
@@ -41,6 +41,8 @@ public class InterceptorInstanceLoader {
     /**
      * Load an instance of interceptor, and keep it singleton. Create {@link AgentClassLoader} for each
      * targetClassLoader, as an extend classloader. It can load interceptor classes from plugins, activations folders.
+     *
+     * 之所以要做这么复杂的双亲委派机制，就是为了实现自定义拦截器实例和加载这个拦截器实例的构造器进行绑定
      *
      * @param className         the interceptor class, which is expected to be found
      * @param targetClassLoader the class loader for current application context
@@ -62,6 +64,7 @@ public class InterceptorInstanceLoader {
             try {
                 pluginLoader = EXTEND_PLUGIN_CLASSLOADERS.get(targetClassLoader);
                 if (pluginLoader == null) {
+                    // 创建AppClassLoader是为了保证可以加载到插件目录，因为拦截器是在插件目录下的
                     pluginLoader = new AgentClassLoader(targetClassLoader);
                     EXTEND_PLUGIN_CLASSLOADERS.put(targetClassLoader, pluginLoader);
                 }

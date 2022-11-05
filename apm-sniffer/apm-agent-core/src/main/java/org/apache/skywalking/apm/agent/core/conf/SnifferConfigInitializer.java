@@ -63,11 +63,14 @@ public class SnifferConfigInitializer {
      * At the end, `agent.service_name` and `collector.servers` must not be blank.
      */
     public static void initializeCoreConfig(String agentOptions) {
+        // 初始化 Properties 文件
         AGENT_SETTINGS = new Properties();
+        // 1.读取配置文件
         try (final InputStreamReader configFileStream = loadConfig()) {
             AGENT_SETTINGS.load(configFileStream);
             for (String key : AGENT_SETTINGS.stringPropertyNames()) {
                 String value = (String) AGENT_SETTINGS.get(key);
+                // 处理占位符
                 AGENT_SETTINGS.put(key, PropertyPlaceholderHelper.INSTANCE.replacePlaceholders(value, AGENT_SETTINGS));
             }
 
@@ -76,6 +79,7 @@ public class SnifferConfigInitializer {
         }
 
         try {
+            // 2.从系统环境变量覆盖配置
             overrideConfigBySystemProp();
         } catch (Exception e) {
             LOGGER.error(e, "Failed to read the system properties.");
@@ -87,17 +91,22 @@ public class SnifferConfigInitializer {
                 agentOptions = agentOptions.trim();
                 LOGGER.info("Agent options is {}.", agentOptions);
 
+                // 3.从命令行参数覆盖
                 overrideConfigByAgentOptions(agentOptions);
             } catch (Exception e) {
                 LOGGER.error(e, "Failed to parse the agent options, val is {}.", agentOptions);
             }
         }
 
+        // 4.覆盖全局 Config 类中的静态变量
         initializeConfig(Config.class);
         // reconfigure logger after config initialization
+        // 5.配置 Config 中的配置的 Log Solver
         configureLogger();
+        // 6.因为初始化的时候配置了默认 Solver，现在 Solver 改变，需要重新生成 Logger
         LOGGER = LogManager.getLogger(SnifferConfigInitializer.class);
 
+        // 7.校验一些参数是否合规
         if (StringUtil.isEmpty(Config.Agent.SERVICE_NAME)) {
             throw new ExceptionInInitializerError("`agent.service_name` is missing.");
         } else {
@@ -121,6 +130,7 @@ public class SnifferConfigInitializer {
             Config.Plugin.PEER_MAX_LENGTH = 200;
         }
 
+        // 8.将 Config Completed 设置为 true，表示配置已经读取完成
         IS_INIT_COMPLETED = true;
     }
 
@@ -196,6 +206,7 @@ public class SnifferConfigInitializer {
         for (final Map.Entry<Object, Object> prop : systemProperties.entrySet()) {
             String key = prop.getKey().toString();
             if (key.startsWith(ENV_KEY_PREFIX)) {
+                // 获取 skywalking. 开头的配置信息，然后截取后半段进行覆盖
                 String realKey = key.substring(ENV_KEY_PREFIX.length());
                 AGENT_SETTINGS.put(realKey, prop.getValue());
             }
@@ -204,6 +215,8 @@ public class SnifferConfigInitializer {
 
     /**
      * Load the specified config file or default config file
+     *
+     * 读取配置文件
      *
      * @return the config file {@link InputStream}, or null if not needEnhance.
      */

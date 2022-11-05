@@ -31,15 +31,21 @@ import net.bytebuddy.matcher.ElementMatcher;
 public interface InstanceMethodsInterceptPoint {
     /**
      * class instance methods matcher.
+     * 返回要拦截的方法名
      *
      * @return methods matcher
      */
     ElementMatcher<MethodDescription> getMethodsMatcher();
 
     /**
+     * 指定拦截器的全类名，这个拦截器是用于在拦截到指定方法后做具体操作的
      * @return represents a class name, the class instance must instanceof InstanceMethodsAroundInterceptor.
      */
     String getMethodsInterceptor();
 
+    /**
+     * 指定是否需要在拦截的时候对原方法的参数进行修改
+     * @return
+     */
     boolean isOverrideArgs();
 }

@@ -30,6 +30,12 @@ import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
 
 /**
+ * >>>> Agent 服务插件定义体系
+ * 1. 所有的服务都必须直接或间接实现 BootService
+ * 2. 使用 @DefaultImplementor 表示一个服务的默认实现，使用 @OverrideImplementor 表示一个服务的覆盖实现
+ * 3. @OverrideImplementor 的 value 属性用于指定要覆盖哪个服务的默认实现
+ * 4. 覆盖实现必须明确指定一个默认实现，且只能覆盖默认实现。也就是说，一个覆盖实现不能够去覆盖另一个覆盖实现
+ *
  * The <code>ServiceManager</code> bases on {@link ServiceLoader}, load all {@link BootService} implementations.
  */
 public enum ServiceManager {
@@ -56,6 +62,29 @@ public enum ServiceManager {
         });
     }
 
+    /*
+    *
+    * if 存在@DefaultImplementor
+    *   if 没有加载
+    *     进行加载
+    *   else
+    *     忽略
+    * else
+    *   if 不存在@OverrideImplementor
+    *     if 没有加载
+    *       进行加载
+    *     else
+    *       报错
+    *   else
+    *     if 指定的默认实现已加载
+    *       if 指定的默认实现有@DefaultImplementor
+    *         进行覆盖
+    *       else
+    *         报错
+    *     else
+    *       直接加载默认实现
+    *
+    */
     private Map<Class, BootService> loadAllServices() {
         Map<Class, BootService> bootedServices = new LinkedHashMap<>();
         List<BootService> allServices = new LinkedList<>();
@@ -63,29 +92,29 @@ public enum ServiceManager {
         for (final BootService bootService : allServices) {
             Class<? extends BootService> bootServiceClass = bootService.getClass();
             boolean isDefaultImplementor = bootServiceClass.isAnnotationPresent(DefaultImplementor.class);
-            if (isDefaultImplementor) {
+            if (isDefaultImplementor) { // 有 @DefaultImplementor
                 if (!bootedServices.containsKey(bootServiceClass)) {
                     bootedServices.put(bootServiceClass, bootService);
                 } else {
                     //ignore the default service
                 }
-            } else {
+            } else { // 没有 @DefaultImplementor
                 OverrideImplementor overrideImplementor = bootServiceClass.getAnnotation(OverrideImplementor.class);
-                if (overrideImplementor == null) {
+                if (overrideImplementor == null) { // 既没有 @DefaultImplementor，有没有 @OverrideImplementor
                     if (!bootedServices.containsKey(bootServiceClass)) {
                         bootedServices.put(bootServiceClass, bootService);
                     } else {
                         throw new ServiceConflictException("Duplicate service define for :" + bootServiceClass);
                     }
-                } else {
+                } else { // 有 @OverrideImplementor
                     Class<? extends BootService> targetService = overrideImplementor.value();
                     if (bootedServices.containsKey(targetService)) {
                         boolean presentDefault = bootedServices.get(targetService)
                                                                .getClass()
                                                                .isAnnotationPresent(DefaultImplementor.class);
-                        if (presentDefault) {
+                        if (presentDefault) { // 如果有 @DefaultImplementor
                             bootedServices.put(targetService, bootService);
-                        } else {
+                        } else { // 如果没有 @DefaultImplementor
                             throw new ServiceConflictException(
                                 "Service " + bootServiceClass + " overrides conflict, " + "exist more than one service want to override :" + targetService);
                         }
