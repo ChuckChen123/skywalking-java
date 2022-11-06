@@ -56,6 +56,8 @@ import static net.bytebuddy.matcher.ElementMatchers.not;
 
 /**
  * The main entrance of sky-walking agent, based on javaagent mechanism.
+ *
+ * SkyWalking 入口类
  */
 public class SkyWalkingAgent {
     private static ILog LOGGER = LogManager.getLogger(SkyWalkingAgent.class);
@@ -63,7 +65,7 @@ public class SkyWalkingAgent {
     /**
      * Main entrance. Use byte-buddy transform to enhance all classes, which define in plugins.
      *
-     * Skywalking 入口
+     * SkyWalking 入口
      *
      */
     public static void premain(String agentArgs, Instrumentation instrumentation) throws PluginException {
@@ -94,10 +96,11 @@ public class SkyWalkingAgent {
         }
 
         // 3 byteBuddy字节码增强
+        // 创建 ByteBuddy 实例
         // 是否开启class debug
         final ByteBuddy byteBuddy = new ByteBuddy().with(TypeValidation.of(Config.Agent.IS_OPEN_DEBUGGING_CLASS));
 
-        // ignore 忽略那些类
+        // ignore 指定 ByteBuddy 要忽略的类
         AgentBuilder agentBuilder = new AgentBuilder.Default(byteBuddy).ignore(
                 nameStartsWith("net.bytebuddy.")
                         .or(nameStartsWith("org.slf4j."))
@@ -111,6 +114,7 @@ public class SkyWalkingAgent {
 
         JDK9ModuleExporter.EdgeClasses edgeClasses = new JDK9ModuleExporter.EdgeClasses();
         try {
+            // 将必要的类注入到 BootstrapClassLoader 中
             agentBuilder = BootstrapInstrumentBoost.inject(pluginFinder, instrumentation, agentBuilder, edgeClasses);
         } catch (Exception e) {
             LOGGER.error(e, "SkyWalking agent inject bootstrap instrumentation failure. Shutting down.");
@@ -118,12 +122,14 @@ public class SkyWalkingAgent {
         }
 
         try {
+            // 解决 JDK 模块系统的跨模块类访问
             agentBuilder = JDK9ModuleExporter.openReadEdge(instrumentation, agentBuilder, edgeClasses);
         } catch (Exception e) {
             LOGGER.error(e, "SkyWalking agent open read edge in JDK 9+ failure. Shutting down.");
             return;
         }
 
+        // 是否将字节码保存到磁盘/内存中
         if (Config.Agent.IS_CACHE_ENHANCED_CLASS) {
             try {
                 agentBuilder = agentBuilder.with(new CacheableTransformerDecorator(Config.Agent.CLASS_CACHE_MODE));
