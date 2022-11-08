@@ -40,9 +40,10 @@ public class PluginBootstrap {
      * @return plugin definition list.
      */
     public List<AbstractClassEnhancePluginDefine> loadPlugins() throws AgentPackageNotFoundException {
-        // 初始化一个ClassLoader
+        // 初始化一个 ClassLoader 用来加载 plugin
         AgentClassLoader.initDefaultLoader();
 
+        // 使用 AgentClassLoader 来获取所有配置文件路径
         PluginResourcesResolver resolver = new PluginResourcesResolver();
         List<URL> resources = resolver.getResources();
 
@@ -53,6 +54,7 @@ public class PluginBootstrap {
 
         for (URL pluginUrl : resources) {
             try {
+                // 将文件转换为 PluginDefine
                 PluginCfg.INSTANCE.load(pluginUrl.openStream());
             } catch (Throwable t) {
                 LOGGER.error(t, "plugin file [{}] init failure.", pluginUrl);
@@ -61,10 +63,11 @@ public class PluginBootstrap {
 
         List<PluginDefine> pluginClassList = PluginCfg.INSTANCE.getPluginClassList();
 
-        List<AbstractClassEnhancePluginDefine> plugins = new ArrayList<AbstractClassEnhancePluginDefine>();
+        List<AbstractClassEnhancePluginDefine> plugins = new ArrayList<>();
         for (PluginDefine pluginDefine : pluginClassList) {
             try {
                 LOGGER.debug("loading plugin class {}.", pluginDefine.getDefineClass());
+                // 读取配置文件中的 value，并实例化为 AbstractClassEnhancePluginDefine
                 AbstractClassEnhancePluginDefine plugin = (AbstractClassEnhancePluginDefine) Class.forName(pluginDefine.getDefineClass(), true, AgentClassLoader
                     .getDefault()).newInstance();
                 plugins.add(plugin);
@@ -73,6 +76,7 @@ public class PluginBootstrap {
             }
         }
 
+        // 动态加载所有实现了 InstrumentationLoader 的插件
         plugins.addAll(DynamicPluginLoader.INSTANCE.load(AgentClassLoader.getDefault()));
 
         return plugins;
